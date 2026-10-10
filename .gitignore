@@ -1,0 +1,16 @@
+# Confidential data - never commit
+data/raw/
+data/processed/
+data/annotations/*
+!data/annotations/labelled_synthetic.csv
+!data/annotations/.gitkeep
+config/anonymise_terms.txt
+models/
+results/
+
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+.pytest_cache/
