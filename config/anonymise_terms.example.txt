@@ -1,0 +1,4 @@
+# Copy to config/anonymise_terms.txt (git-ignored) and list organisation-specific
+# names to replace with <ORG>: clients, internal systems, people. One per line.
+ExampleBank
+Jane Doe

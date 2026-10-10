@@ -1,0 +1,49 @@
+req_id,text_clean,category,quality_label
+S001,ESB should validate the request signature before processing,Validation/Security,Clear
+S002,ESB should verify the JWT token and return 401 if invalid,Validation/Security,Clear
+S003,ESB will validate mandatory fields and return 400 if any field is missing,Validation/Security,Clear
+S004,ESB should authenticate the partner using mutual TLS certificates,Validation/Security,Clear
+S005,The API must be secure,Validation/Security,Ambiguous
+S006,ESB should validate the input properly,Validation/Security,Ambiguous
+S007,ESB should check the signature,Validation/Security,Incomplete
+S008,ESB should encrypt the account number in the payload using AES-256,Validation/Security,Clear
+S009,ESB should retry the CBS posting 3 times with 30 second interval on timeout,Error Handling,Clear
+S010,ESB should retry posting in case of timeout,Error Handling,Incomplete
+S011,ESB should reverse the debit if the credit leg fails,Error Handling,Clear
+S012,Proper error handling should be implemented,Error Handling,Ambiguous
+S013,ESB should return HTTP 500 with error code ESB-001 when the backend is unavailable,Error Handling,Clear
+S014,Errors should be handled appropriately,Error Handling,Ambiguous
+S015,ESB should move failed messages to the dead letter queue after 5 attempts,Error Handling,Clear
+S016,In case of failure,Error Handling,Incomplete
+S017,ESB should send a callback to the payer FSP after completing the transfer,Notification/Callback,Clear
+S018,ESB should notify the customer by SMS after successful payment,Notification/Callback,Clear
+S019,ESB should send an email alert to the operations team when posting fails,Notification/Callback,Clear
+S020,Customer should be notified,Notification/Callback,Incomplete
+S021,ESB should send acknowledgement to the channel within 2 seconds,Notification/Callback,Clear
+S022,ESB should notify the relevant parties as required,Notification/Callback,Ambiguous
+S023,ESB should send callback,Notification/Callback,Incomplete
+S024,ESB should push the payment status to the channel webhook,Notification/Callback,Clear
+S025,ESB should store the request and response in the audit table,Data/Storage,Clear
+S026,ESB should save the transaction in the data store with status RECEIVED,Data/Storage,Clear
+S027,ESB should log all requests,Data/Storage,Incomplete
+S028,Transaction data should be kept for some time,Data/Storage,Ambiguous
+S029,ESB should persist the additionalInfo fields in the transfers table,Data/Storage,Clear
+S030,ESB should update the transaction status to COMPLETED in the database,Data/Storage,Clear
+S031,Data should be stored efficiently,Data/Storage,Ambiguous
+S032,ESB should archive records older than 90 days to the history table,Data/Storage,Clear
+S033,ESB should post the transaction to CBS through the backoffice posting API,Integration/Backend,Clear
+S034,ESB should call the CBS account inquiry service to fetch the balance,Integration/Backend,Clear
+S035,ESB should query the biller to fetch the bill amount,Integration/Backend,Clear
+S036,ESB should integrate with the backend,Integration/Backend,Incomplete
+S037,ESB should transform the CBS SOAP response to JSON,Integration/Backend,Clear
+S038,ESB should invoke the core banking system as needed,Integration/Backend,Ambiguous
+S039,ESB should send the payment request to GePG with the control number,Integration/Backend,Clear
+S040,Call backend,Integration/Backend,Incomplete
+S041,ESB should expose a REST API for fund transfers to TIPS,API Exposure,Clear
+S042,ESB should expose the balance inquiry resource GET /accounts/{accountNo}/balance,API Exposure,Clear
+S043,ESB should receive the bill payment request from the channel,API Exposure,Clear
+S044,The API should be user friendly,API Exposure,Ambiguous
+S045,ESB should expose an API,API Exposure,Incomplete
+S046,ESB should publish the API in the developer portal with OAuth2 security,API Exposure,Clear
+S047,The API should respond quickly,API Exposure,Ambiguous
+S048,ESB should expose a SOAP endpoint for the legacy channel,API Exposure,Clear
