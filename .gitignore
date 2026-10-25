@@ -8,6 +8,8 @@ config/anonymise_terms.txt
 models/
 results/
 
+.agents/
+.claude/
 .venv/
 __pycache__/
 *.pyc
