@@ -47,3 +47,4 @@ S045,ESB should expose an API,API Exposure,Incomplete
 S046,ESB should publish the API in the developer portal with OAuth2 security,API Exposure,Clear
 S047,The API should respond quickly,API Exposure,Ambiguous
 S048,ESB should expose a SOAP endpoint for the legacy channel,API Exposure,Clear
+S049,The Requirement  should have prior Approval ,Process,Clear
