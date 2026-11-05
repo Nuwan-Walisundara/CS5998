@@ -29,10 +29,13 @@ Requirement Document → Extraction → Preprocessing → Classification → Qua
 |Structure parsing		|extract.py			|Reads the template tables and normalises field names|
 |Segmentation			|extract.py			|Splits sections into individual requirement statements and numbered items|
 |Mapping extraction		|extract.py			|One row per source-to-target mapping, plus the JSON keys from payloads|
-|Anonymisation			|preprocess.py		|Replaces URLs, IPs, e-mails, long numbers and credentials, plus your custom names|
+|Anonymisation			|preprocess.py		|Replaces URLs, IPs, e-mails, long numbers and credentials, plus your custom names, Predefine mappings defined at config/anonymise_terms.txt |
 |Normalisation			|preprocess.py		|Collapses whitespace and removes leftover numbering|
 |Filtering				|preprocess.py		|Marks empty template fields and payload blocks, and keeps only real statements for NLP|
 |Features				|preprocess.py		|Word and character counts|
+
+
+
 
 The LLM **never decides what an issue is**. It only phrases questions for findings produced by stages 5–6.
 Question IDs it returns are checked against the findings, and any finding it skips gets a template question.
