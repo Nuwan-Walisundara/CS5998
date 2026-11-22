@@ -1,0 +1,3 @@
+[server]
+# Skip scanning imported modules: transformers' vision modules need torchvision and flood the log.
+fileWatcherType = "none"

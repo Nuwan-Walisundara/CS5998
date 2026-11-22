@@ -1,4 +1,6 @@
 # Copy to config/anonymise_terms.txt (git-ignored) and list organisation-specific
-# names to replace with <ORG>: clients, internal systems, people. One per line.
-ExampleBank
+# names to anonymise: clients, internal systems, people. One per line, whole word, case-insensitive.
+#   TERM = Replacement   -> replaced with a general term (e.g. a fintech equivalent)
+#   TERM                 -> replaced with <ORG>
+ExampleBank = Bank
 Jane Doe

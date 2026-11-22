@@ -15,27 +15,38 @@ _PATTERNS = [
     (re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b"), "<EMAIL>"),
     (re.compile(r"\b\+?\d{9,15}\b"), "<NUMBER>"),
     (re.compile(r"\b(?:password|pwd|secret|token|api[_-]?key)\s*[:=]\s*\S+", re.I), "<CREDENTIAL>"),
+    # Confluence-style @mentions: "@Jane Doe", "@jane.doe (Unlicensed)", "@Unknown User (id)"
+    (re.compile(r"@(?:Unknown User \([^)]*\)|[\w.]+(?: [A-Z][a-z]+)?)(?: \(Unlicensed\))?"), "<PERSON>"),
 ]
 
 
 @lru_cache(maxsize=1)
-def _custom_terms() -> re.Pattern | None:
-    """Organisation-specific names (clients, systems, people) from a private file."""
+def _custom_terms() -> tuple[re.Pattern, dict[str, str]] | None:
+    """Organisation-specific names from a private file: `TERM = Replacement`, or `TERM` alone for <ORG>."""
     if not config.ANON_TERMS_FILE.exists():
         return None
-    terms = [t.strip() for t in config.ANON_TERMS_FILE.read_text().splitlines()
-             if t.strip() and not t.startswith("#")]
-    if not terms:
+    mapping = {}
+    for line in config.ANON_TERMS_FILE.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        term, _, rep = line.partition("=")
+        if term.strip():
+            mapping[term.strip().lower()] = rep.strip() or "<ORG>"
+    if not mapping:
         return None
-    return re.compile(r"\b(" + "|".join(map(re.escape, sorted(terms, key=len, reverse=True))) + r")\b", re.I)
+    pattern = re.compile(r"\b(" + "|".join(map(re.escape, sorted(mapping, key=len, reverse=True))) + r")\b", re.I)
+    return pattern, mapping
 
 
 def anonymise(text: str) -> str:
     t = text or ""
+    # Custom terms first, so listed full names win over the generic @mention pattern
+    if (custom := _custom_terms()) is not None:
+        pattern, mapping = custom
+        t = pattern.sub(lambda m: mapping[m.group(0).lower()], t)
     for pat, rep in _PATTERNS:
         t = pat.sub(rep, t)
-    if (custom := _custom_terms()) is not None:
-        t = custom.sub("<ORG>", t)
     return t
 
 
@@ -77,8 +88,16 @@ def main():
     df.to_csv(a.out, index=False)
     # Annotation sheet: label `category` and `quality_label` by hand (see docs/annotation_guidelines.md)
     ann = df.loc[df.is_nlp_unit, ["req_id", "doc", "field", "text_clean"]].assign(category="", quality_label="")
+    # Document names also carry client/system names; "_" would block whole-word matching
+    ann["doc"] = ann["doc"].str.replace("_", " ").map(anonymise)
     config.ANNOTATION_DIR.mkdir(parents=True, exist_ok=True)
-    ann.to_csv(config.ANNOTATION_DIR / "to_annotate.csv", index=False)
+    path = config.ANNOTATION_DIR / "to_annotate.csv"
+    if path.exists():  # keep labels already entered for unchanged statements
+        old = pd.read_csv(path).dropna(subset=["category"]).drop_duplicates("text_clean")
+        old = old.set_index("text_clean")[["category", "quality_label"]]
+        known = ann["text_clean"].isin(old.index)
+        ann.loc[known, ["category", "quality_label"]] = old.loc[ann.loc[known, "text_clean"]].values
+    ann.to_csv(path, index=False)
     print(f"{len(df)} units cleaned, {int(df.is_nlp_unit.sum())} NLP units -> {a.out}")
 
 
