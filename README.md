@@ -96,3 +96,92 @@ docs/annotation_guidelines.md
 config/anonymise_terms.example.txt
 tests/                    pytest unit tests
 ```
+
+
+**Mostly yes.** Training and production use the **same preprocessing code and the same saved model**, but there's one weak point: the training file is a snapshot.
+
+## The two paths
+
+**Training** (`python -m src.classify`):
+```
+data/raw → extract.py → preprocess.py → to_annotate.csv → (you label) → labelled.csv
+                                                                          + labelled_synthetic.csv
+                                                                          → labelled_all.csv → classify.py → models/*.joblib
+```
+
+**Production** (`src.pipeline` and the dashboard):
+```
+new document → extract.py → preprocess.py → NLP statements → models/*.joblib → predictions
+```
+
+## Where they match ✅
+- **The same extraction and cleaning code** (`extract.py`, `preprocess.py`): anonymisation, normalisation and the same filter that keeps only real requirement statements (`is_nlp_unit`). The 52 rows you labelled are exactly the statements production would analyse.
+- **The same input column:** both read `text_clean`.
+- **The same text-to-numbers step:** the saved model file contains both the TF-IDF or MiniLM step *and* the classifier. Production can't accidentally vectorise text differently from training.
+- **The same model in the command line and the dashboard:** both call `analyse()`.
+
+## Where they can drift apart ⚠️
+1. **The labelled CSV is a frozen copy.** Training reads `text_clean` from the CSV; it doesn't re-run preprocessing. So if preprocessing changes, the training text goes out of date until you rebuild the file. That's exactly what happened with anonymisation: production started outputting *"Real-Time Retail Payment Switch"* while the models had been trained on *"TIPS"*. I fixed the CSV by hand, and **retraining** will bring the models back in line.
+2. **Synthetic rows skip extraction.** The 48 rows in `labelled_synthetic.csv` were written by hand, so they never went through `extract.py`. They're also shorter and cleaner than real statements. That's a known difference between training and production data; say so in the limitations.
+3. **There's no automatic check.** Nothing warns you if a model was trained on text from an older preprocessing version.
+
+## Make them match fully
+The robust fix is to have `classify.py` **re-apply `anonymise()` + `normalise()` to `text_clean`** before training. Then every training run uses the current preprocessing rules automatically, and the labelled CSV can't go out of date. It's a small change of about 2 lines.
+
+For your report, the point to make: *"Preprocessing is shared code between training and inference, and the vectoriser is saved inside the model, which prevents training/serving skew; the labelled dataset is re-cleaned at training time so that changes to preprocessing rules propagate."* That last part is true once the fix is in.
+
+Should I add it?
+
+
+-----------------
+To add data, put more labelled rows in a CSV and run the training command again. The model trains from scratch on whatever CSV you give it, so it isn't updated in steps.
+
+## Option A – Add rows by hand
+Open `data/annotations/labelled_synthetic.csv` (or a copy of it) in Excel or VS Code and add rows in the same 4 columns:
+
+```
+req_id,text_clean,category,quality_label
+N001,ESB should retry the CBS call 3 times at 30 s interval on timeout,Error Handling,Clear
+N002,The API should respond quickly,API Exposure,Ambiguous
+```
+
+## Option B – Take requirements from your WSO2 documents (recommended)
+1. Copy the documents (`.md` or `.docx`) into `data/raw/`.
+2. Extract and anonymise them:
+   ```bash
+   python -m src.extract && python -m src.preprocess
+   ```
+   This creates `data/annotations/to_annotate.csv`, with one requirement per row.
+3. Fill in `category` and `quality_label` for each row, following `docs/annotation_guidelines.md`. Save the file as `data/annotations/labelled.csv`.
+4. Optionally, combine it with the sample data so you have more examples:
+   ```bash
+   python -c "import pandas as pd; pd.concat([pd.read_csv('data/annotations/labelled_synthetic.csv'), pd.read_csv('data/annotations/labelled.csv')]).drop_duplicates('text_clean').to_csv('data/annotations/labelled_all.csv', index=False)"
+   ```
+
+## Retrain
+```bash
+python -m src.classify --labels data/annotations/labelled_all.csv --target category
+```
+```bash
+python -m src.classify --labels data/annotations/labelled_all.csv --target quality_label
+```
+Each run replaces the files in `models/` and `results/`. The pipeline and dashboard pick up the new model automatically.
+
+## Labelling tips
+- **Aim for at least 30–50 examples per category.** Training uses 5-fold cross-validation, so any category with fewer than 5 rows will cause problems.
+- **Keep the classes reasonably balanced**, or the model will mostly predict the largest category.
+- **The guidelines define a 7th category, `Functional/Other`, that has no sample rows yet.** Add examples of it, or the model can't learn it.
+- **Use exactly the label spellings from the guidelines.** "Error handling" and "Error Handling" count as two different classes.
+- **Get a second person to label about 50 rows** and report Cohen's kappa. The guidelines ask for this, and it supports your report.
+
+----
+`annotation_guidelines.md` already exists at [docs/annotation_guidelines.md](docs/annotation_guidelines.md), so there's nothing to create. That's the file I summarised in my last answer. You can click the link or open it with:
+
+```bash
+open docs/annotation_guidelines.md
+```
+
+If you meant something different, tell me which:
+- **A copy in another folder**, for example next to `to_annotate.csv` or in the parent capstone folder
+- **An expanded version**, with more WSO2 examples per category, edge cases, or a section for your second labeller
+- **A Word or PDF version** for your report or supervisor
