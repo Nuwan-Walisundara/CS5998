@@ -185,3 +185,54 @@ If you meant something different, tell me which:
 - **A copy in another folder**, for example next to `to_annotate.csv` or in the parent capstone folder
 - **An expanded version**, with more WSO2 examples per category, edge cases, or a section for your second labeller
 - **A Word or PDF version** for your report or supervisor
+
+
+-------------------------------
+
+
+You now have 74 documents and 539 rows to label. 88 rows match ones you already labelled, so I'll carry those labels over by text and label the rest myself.
+
+All **539 rows** in [to_annotate.csv](data/annotations/to_annotate.csv) now have a `category` and a `quality_label`. Your `data/raw/` folder grew to 74 documents, so the file was regenerated with many new rows.
+
+- **88 rows** matched sentences you'd already labelled, so they got the same labels.
+- **416 new distinct sentences** I labelled following `docs/annotation_guidelines.md`. The remaining rows repeat sentences from those two groups and got the same labels.
+
+The file as it was before is backed up at `/private/tmp/claude-502/-Users-nuwanw-personal-MDANDAI-S3-CS5998-Capstone-Project/28bafb5d-d5b0-4281-8575-80c1d03270e2/scratchpad/backup/to_annotate.before.csv`.
+
+| category | n | | quality_label | n |
+|---|---|---|---|---|
+| Functional/Other | 154 | | Clear | 412 |
+| API Exposure | 111 | | Incomplete | 97 |
+| Validation/Security | 69 | | Ambiguous | 30 |
+| Integration/Backend | 69 | | | |
+| Notification/Callback | 52 | | | |
+| Data/Storage | 50 | | | |
+| Error Handling | 34 | | | |
+
+Every category now has at least 34 real examples, which is enough for training without synthetic data.
+
+**How I handled the less obvious rows:**
+- **Pointers like "Refer to the attached…\<URL\>", section headers ("MESSAGE PROCESSING", "1.", "Refer:")** → Functional/Other, Incomplete. They contain no requirement.
+- **SWIFT message identification** (message type, direction, clearing type) → Functional/Other. Duplicate checks, signature checks and account validation → Validation/Security.
+- **MT202 returns, reversals and "retry if timed out"** → Error Handling.
+- **"Retry until acknowledged" or "send until acknowledged", with no limit or interval** → Incomplete.
+- **Rows with open analyst questions** (`< @… can you pls …>`, `* Pls state the criteria…`) → Incomplete.
+- **"Appropriate", "accordingly", "as per requirement", "desired response", "properly"** → Ambiguous.
+
+**⚠️ Fix before you train or submit:**
+1. **Real people's names are still in the text:** *@Tonny Kayage, @chanaka sisira kumara, @Anuradha Prasanna, @Solomon.Komba*. Other organisation names are there too: *KCBL, TACOBA, Montran, ZECO*, and the BIC code *CORUTZTZ*. Add them to `config/anonymise_terms.txt`, for example `KCBL = Partner Bank`, `Montran = Clearing Gateway`, or a name alone so it becomes `<ORG>`. Also consider a rule that removes `@names` automatically.
+2. **There are duplicate documents.** *GePG Sweeping* and *Transfer List API* each appear twice under different file names, giving 73 repeated sentences. Remove the duplicates from `data/raw/`, or remove duplicate texts before training. Otherwise the same sentence can land in both the training and test folds and inflate your scores.
+3. **Review the labels.** As before, these are my draft. Check the Functional/Other and Incomplete groups especially.
+
+**Next steps:**
+```bash
+cd /Users/nuwanw/personal/MDANDAI/S3/CS5998-Capstone_Project/CS5998 && source .venv/bin/activate
+```
+```bash
+cp data/annotations/to_annotate.csv data/annotations/labelled.csv
+```
+```bash
+python -c "import pandas as pd; pd.concat([pd.read_csv('data/annotations/labelled_synthetic.csv'), pd.read_csv('data/annotations/labelled.csv')]).drop_duplicates('text_clean').to_csv('data/annotations/labelled_all.csv', index=False)"
+```
+
+Then retrain both models with `--target category` and `--target quality_label`.
